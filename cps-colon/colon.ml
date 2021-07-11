@@ -10,10 +10,22 @@ let rec f e k =
     | Val.VNum n      -> Term.Val v
     | Val.VAbs (x, e) ->
       let var_k = Val.VVar "k" in
-      Term.Val (Val.VAbs (x, Term.Val (Val.VAbs ("k", f e var_k)))) in
+      Term.Val (Val.VAbs (x, Term.Val (Val.VAbs ("k", f e var_k))))
+    | Val.VShf        ->
+      let f_var x = Term.Val (Val.VVar x) in
+      let id_x = Term.Val (Val.VAbs ("x", Term.Val (Val.VVar "x"))) in
+      Term.Val (Val.VAbs ("w", Term.Val (Val.VAbs ("j",
+        Term.NVal (NVal.App
+          (Term.NVal (NVal.App (f_var "w",
+             Term.Val (Val.VAbs ("y", Term.Val (Val.VAbs ("k",
+               Term.NVal (NVal.App (f_var "k",
+                 Term.NVal (NVal.App (f_var "j", f_var "y")))))))))), id_x))))))
+  in
 
   (* fp : NVal.t -> Term.t *)
   let rec fp p k = match p with
+    | NVal.Let (x, e1, e2) -> f e1 (Val.VAbs (x, f e2 k))
+    | NVal.Rst (e)         -> Term.NVal (NVal.App (Term.Val k, f e (Val.VAbs ("x", Term.Val (Val.VVar "x")))))
     | NVal.App (e1, e2) ->
       match (e1, e2) with
       | (Term.NVal p1, Term.NVal p2) ->
